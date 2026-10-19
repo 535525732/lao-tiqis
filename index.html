@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全能测量 & 楼梯计算器（cm）</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#eef2f7;margin:0;padding:0;color:#333}
+.topbar{background:linear-gradient(135deg,#2d8cf0,#1b6dad);color:#fff;text-align:center;padding:16px 12px}
+.topbar h1{margin:0;font-size:20px}
+.topbar div{font-size:12px;opacity:.9;margin-top:4px}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #2d8cf0;flex-wrap:wrap;align-items:center}
+.tab{flex:1;min-width:78px;text-align:center;padding:12px 4px;cursor:pointer;font-size:13px;color:#666;border-bottom:3px solid transparent}
+.tab.active{color:#2d8cf0;border-bottom-color:#2d8cf0;font-weight:600}
+.wrap{max-width:820px;margin:0 auto;padding:14px}
+.card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:14px}
+.card h3{margin:0 0 12px;font-size:16px;color:#2d8cf0;border-left:4px solid #2d8cf0;padding-left:8px}
+.sub{font-size:12px;color:#888;margin:-6px 0 12px}
+.sec-title{font-size:13px;color:#555;margin:16px 0 8px;padding:6px 10px;background:#f5f7fa;border-radius:6px;font-weight:600}
+.field{display:flex;align-items:center;margin:10px 0;gap:8px}
+.field label{width:130px;font-size:13px;color:#555;flex-shrink:0}
+.field input,.field select{flex:1;padding:9px 10px;border:1px solid #dcdcdc;border-radius:6px;font-size:14px;min-width:0}
+.unit{width:40px;text-align:right;font-size:12px;color:#999;flex-shrink:0}
+.btns{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+button{padding:11px 16px;border:none;border-radius:8px;font-size:14px;cursor:pointer}
+.primary{background:#2d8cf0;color:#fff;flex:1;min-width:120px}
+.ghost{background:#f5f5f5;color:#333}
+.small-btn{background:#2d8cf0;color:#fff;padding:6px 12px;font-size:12px;border-radius:6px;margin:4px 2px;border:none;cursor:pointer}
+.del-btn{background:#ff4d4f;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:12px;cursor:pointer}
+.result{font-size:14px;line-height:1.9}
+.result b{color:#2d8cf0}
+.big{font-size:20px}
+.warn{color:#ff4d4f;font-size:12px}
+.ok{color:#52c41a}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
+th,td{border:1px solid #eee;padding:7px 4px;text-align:center}
+th{background:#f5f7fa;color:#555}
+canvas{width:100%;border:1px solid #eee;border-radius:8px;background:#fafbfc;margin-top:8px}
+.hint{font-size:12px;color:#999;margin-top:6px}
+.export-btn{margin-left:auto;background:#19be6b;color:#fff;border:none;border-radius:6px;padding:8px 12px;font-size:13px;cursor:pointer;white-space:nowrap;margin:4px 2px}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99;align-items:center;justify-content:center;padding:16px}
+.modal.show{display:flex}
+.modal-box{background:#fff;border-radius:10px;padding:20px;max-width:480px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.modal-box h3{margin:0 0 6px}.modal-box .sub{color:#888;font-size:13px;margin-bottom:12px}
+.exp-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #e5e5e5;border-radius:6px;margin:6px 0}
+.exp-item input{width:18px;height:18px;flex:none}.exp-item span{flex:1;font-size:14px}
+.exp-item small{color:#999;font-size:12px}
+@media(max-width:600px){
+    .tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+    .tab{min-width:86px;font-size:12px;padding:8px 6px}
+    .field{flex-direction:column;align-items:flex-start}
+    .field label{margin-bottom:4px}
+    .btns button{width:100%;margin:4px 0}
+    input,select{font-size:16px}
+}
+@media print{
+  .tabs, .export-btn, .btns, .small-btn, .del-btn,
+  .modal, #loadFile, .topbar div{display:none !important}
+  body{background:#fff;padding:0}
+  .wrap{max-width:100%;padding:0}
+  .card{box-shadow:none;border:1px solid #ddd;page-break-inside:avoid;margin-bottom:10px}
+  .panel{display:block !important}
+  canvas{max-width:100%;height:auto}
+  .result{font-size:12px}
+  table{font-size:11px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <h1>全能测量 & 楼梯计算器</h1>
+    <div>土地面积 · 直梯 · 圆柱梯 · 转弯梯 · 扶手栏杆 · 门窗框 · 木工下料（单位：cm）</div>
+</div>
+
+<div class="tabs" id="tabs">
+    <div class="tab active" onclick="switchTab(0)">📐 土地面积</div>
+    <div class="tab" onclick="switchTab(1)">🪜 直梯</div>
+    <div class="tab" onclick="switchTab(2)">🌀 圆柱梯</div>
+    <div class="tab" onclick="switchTab(3)">📏 转弯梯</div>
+    <div class="tab" onclick="switchTab(4)">🛡 扶手栏杆</div>
+    <div class="tab" onclick="switchTab(5)">🪟 门窗框</div>
+    <div class="tab" onclick="switchTab(6)">🪚 木工下料</div>
+    <button class="export-btn" onclick="openExport()">📤 导出CSV</button>
+    <button class="export-btn" onclick="saveLocal()">💾 保存</button>
+    <button class="export-btn" onclick="loadLocal()">📂 读取</button>
+    <button class="export-btn" onclick="calcAll()">⚡ 一键计算</button>
+    <button class="export-btn" onclick="printPage()">🖨 打印PDF</button>
+    <input type="file" id="loadFile" accept=".json" style="display:none" onchange="handleLoadFile(event)">
+</div>
+
+<div class="wrap">
+
+<!-- 0 土地面积 -->
+<div class="panel" id="panel0">
+  <div class="card">
+    <h3>📐 土地面积（边长 + 左/右转 + 角度）</h3>
+    <p class="sub">按导线法输入各边边长、方向与转角，自动计算闭合多边形面积</p>
+    <div class="field"><label>起始方位角</label><input id="ld_start" type="number" value="0"><span class="unit">°</span></div>
+    <div class="sec-title">各边数据（边长 + 方向 + 角度）</div>
+    <table id="ld_table">
+      <thead><tr><th>边号</th><th>边长(cm)</th><th>方向</th><th>角度(°)</th><th>操作</th></tr></thead>
+      <tbody id="ld_body"></tbody>
+    </table>
+    <button class="small-btn" onclick="addLandRow()">+ 添加边</button>
+    <button class="small-btn" onclick="clearLandRows()">清空</button>
+    <div class="btns">
+      <button class="primary" onclick="calcLand()">计算面积</button>
+      <button class="ghost" onclick="clearResult('landResult')">清空结果</button>
+    </div>
+    <div class="result" id="landResult"></div>
+    <canvas id="landCanvas" height="260"></canvas>
+  </div>
+</div>
+
+<!-- 1 直梯 -->
+<div class="panel" id="panel1" style="display:none">
+  <div class="card">
+    <h3>🪜 直梯（分段计算）</h3>
+    <p class="sub">可添加多段楼梯，每段独立计算，最后汇总总高、总水平长</p>
+    <div class="sec-title">分段列表</div>
+    <table id="st_table">
+      <thead><tr><th>段号</th><th>段高(cm)</th><th>踏步高(cm)</th><th>踏步宽(cm)</th><th>操作</th></tr></thead>
+      <tbody id="st_body"></tbody>
+    </table>
+    <button class="small-btn" onclick="addStairRow()">+ 添加段</button>
+    <button class="small-btn" onclick="clearStairRows()">清空</button>
+    <div class="btns">
+      <button class="primary" onclick="calcStair()">计算</button>
+      <button class="ghost" onclick="clearResult('stairResult')">清空结果</button>
+    </div>
+    <div class="result" id="stairResult"></div>
+    <canvas id="stairCanvas" height="300"></canvas>
+  </div>
+</div>
+
+<!-- 2 圆柱梯 -->
+<div class="panel" id="panel2" style="display:none">
+  <div class="card">
+    <h3>🌀 圆柱梯（旋转梯）计算</h3>
+    <p class="sub">输入层高、旋转角度、起始角、内半径、外半径、踏步高（cm）</p>
+    <div class="field"><label>层高 H</label><input id="c_h" type="number" value="280"><span class="unit">cm</span></div>
+    <div class="field"><label>旋转角度 θ</label><input id="c_angle" type="number" value="360"><span class="unit">°</span></div>
+    <div class="field"><label>起始角 θ₀</label><input id="c_start" type="number" value="-90"><span class="unit">°</span></div>
+    <div class="field"><label>内半径 r</label><input id="c_ri" type="number" value="40"><span class="unit">cm</span></div>
+    <div class="field"><label>外半径 R</label><input id="c_ro" type="number" value="110"><span class="unit">cm</span></div>
+    <div class="field"><label>踏步高 h</label><input id="c_rise" type="number" value="17.5"><span class="unit">cm</span></div>
+    <div class="btns">
+      <button class="primary" onclick="calcCylinder()">计算</button>
+      <button class="ghost" onclick="clearResult('cylResult')">清空</button>
+    </div>
+    <div class="result" id="cylResult"></div>
+    <canvas id="cylCanvas" height="320"></canvas>
+  </div>
+</div>
+
+<!-- 3 转弯梯 -->
+<div class="panel" id="panel3" style="display:none">
+  <div class="card">
+    <h3>📏 转弯梯（L 型）计算</h3>
+    <p class="sub">直段 + 转弯平台 + 直段，输入各段参数（cm）</p>
+    <div class="field"><label>层高 H</label><input id="t_h" type="number" value="280"><span class="unit">cm</span></div>
+    <div class="field"><label>踏步高 h</label><input id="t_rise" type="number" value="17.5"><span class="unit">cm</span></div>
+    <div class="field"><label>踏步宽 b</label><input id="t_run" type="number" value="26"><span class="unit">cm</span></div>
+    <div class="field"><label>平台宽 W</label><input id="t_land" type="number" value="90"><span class="unit">cm</span></div>
+    <div class="btns">
+      <button class="primary" onclick="calcTurn()">计算</button>
+      <button class="ghost" onclick="clearResult('turnResult')">清空</button>
+    </div>
+    <div class="result" id="turnResult"></div>
+    <canvas id="turnCanvas" height="320"></canvas>
+  </div>
+</div>
+
+<!-- 4 扶手栏杆 -->
+<div class="panel" id="panel4" style="display:none">
+  <div class="card">
+    <h3>🛡 扶手栏杆计算</h3>
+    <p class="sub">输入水平段长、斜段水平投影、斜段高度、立柱间距（cm）</p>
+    <div class="field"><label>水平段长 L1</label><input id="r_l1" type="number" value="200"><span class="unit">cm</span></div>
+    <div class="field"><label>斜段水平投影 L2</label><input id="r_l2" type="number" value="300"><span class="unit">cm</span></div>
+    <div class="field"><label>斜段高度 H2</label><input id="r_h2" type="number" value="150"><span class="unit">cm</span></div>
+    <div class="field"><label>立柱间距 s</label><input id="r_s" type="number" value="100"><span class="unit">cm</span></div>
+    <div class="btns">
+      <button class="primary" onclick="calcRail()">计算</button>
+      <button class="ghost" onclick="clearResult('railResult')">清空</button>
+    </div>
+    <div class="result" id="railResult"></div>
+    <canvas id="railCanvas" height="260"></canvas>
+  </div>
+</div>
+
+<!-- 5 门窗框 -->
+<div class="panel" id="panel5" style="display:none">
+  <div class="card">
+    <h3>🪟 门窗框计算</h3>
+    <p class="sub">输入洞口宽、高、框料宽、安装缝（cm）</p>
+    <div class="field"><label>洞口宽 W</label><input id="d_w" type="number" value="120"><span class="unit">cm</span></div>
+    <div class="field"><label>洞口高 H</label><input id="d_h" type="number" value="150"><span class="unit">cm</span></div>
+    <div class="field"><label>框料宽 f</label><input id="d_f" type="number" value="6"><span class="unit">cm</span></div>
+    <div class="field"><label>安装缝 g</label><input id="d_g" type="number" value="1"><span class="unit">cm</span></div>
+    <div class="btns">
+      <button class="primary" onclick="calcDoor()">计算</button>
+      <button class="ghost" onclick="clearResult('doorResult')">清空</button>
+    </div>
+    <div class="result" id="doorResult"></div>
+    <canvas id="doorCanvas" height="260"></canvas>
+  </div>
+</div>
+
+<!-- 6 木工下料 -->
+<div class="panel" id="panel6" style="display:none">
+  <div class="card">
+    <h3>🪚 木工下料计算（多件明细）</h3>
+    <p class="sub">每件输入：名称、长、宽、厚、数量、材质、单价；自动汇总面积、体积与金额（cm）</p>
+    <div class="sec-title">下料明细</div>
+    <div style="overflow-x:auto">
+      <table id="wd_table" style="min-width:760px">
+        <thead>
+          <tr>
+            <th>件号</th><th>名称</th>
+            <th>长(cm)</th><th>宽(cm)</th><th>厚(cm)</th><th>数量</th>
+            <th>材质</th><th>单价(元/m³)</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="wd_body"></tbody>
+      </table>
+    </div>
+    <button class="small-btn" onclick="addWoodRow()">+ 添加一件</button>
+    <button class="small-btn" onclick="clearWoodRows()">清空</button>
+    <div class="field"><label>锯缝 k</label><input id="w_k" type="number" value="0.3"><span class="unit">cm</span></div>
+    <div class="field"><label>损耗率</label><input id="w_loss" type="number" value="5"><span class="unit">%</span></div>
+    <div class="btns">
+      <button class="primary" onclick="calcWood()">计算</button>
+      <button class="ghost" onclick="clearResult('woodResult')">清空结果</button>
+    </div>
+    <div class="result" id="woodResult"></div>
+    <canvas id="woodCanvas" height="260"></canvas>
+  </div>
+</div>
+
+</div>
+
+<!-- 导出弹窗 -->
+<div class="modal" id="exportModal">
+  <div class="modal-box">
+    <h3>📤 导出计算结果（CSV）</h3>
+    <p class="sub">勾选要导出的模块（已自动选中有数据的）：</p>
+    <div id="exportList"></div>
+    <div class="sec-title">操作</div>
+    <div class="btns">
+      <button class="primary" onclick="doExport()">导出 CSV</button>
+      <button class="ghost" onclick="closeExport()">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========== 通用 ========== */
+const MODULES = [
+  {id:'land',  name:'土地面积'},
+  {id:'stair', name:'直梯'},
+  {id:'cyl',   name:'圆柱梯'},
+  {id:'turn',  name:'转弯梯'},
+  {id:'rail',  name:'扶手栏杆'},
+  {id:'door',  name:'门窗框'},
+  {id:'wood',  name:'木工下料'}
+];
+const results = {};
+
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,idx)=>{
+    if(idx<7) t.classList.toggle('active', idx===i);
+  });
+  for(let k=0;k<7;k++){
+    const p=document.getElementById('panel'+k);
+    if(p) p.style.display = (k===i?'block':'none');
+  }
+}
+function clearResult(id){ document.getElementById(id).innerHTML=''; }
+function fmt(n,d=2){ return Number(n).toFixed(d); }
+
+function drawTag(ctx, x, y, text, color, align='center'){
+  ctx.font='12px "Microsoft YaHei",sans-serif';
+  ctx.textAlign=align; ctx.textBaseline='middle';
+  const w=ctx.measureText(text).width;
+  let rectX;
+  if(align==='center') rectX=x-w/2;
+  else if(align==='right') rectX=x-w;
+  else rectX=x;
+  ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.fillRect(rectX-3, y-9, w+6, 18);
+  ctx.fillStyle=color;
+  ctx.fillText(text, x, y);
+}
+function drawArrowLine(ctx, x1,y1,x2,y2,color){
+  ctx.strokeStyle=color; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const ang=Math.atan2(y2-y1,x2-x1);
+  const head=6;
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-head*Math.cos(ang-0.4), y2-head*Math.sin(ang-0.4));
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-head*Math.cos(ang+0.4), y2-head*Math.sin(ang+0.4));
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x1+head*Math.cos(ang-0.4), y1+head*Math.sin(ang-0.4));
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x1+head*Math.cos(ang+0.4), y1+head*Math.sin(ang+0.4));
+  ctx.stroke();
+}
+
+/* ========== 0 土地面积 ========== */
+function addLandRow(len='', dir='R', ang=''){
+  const tb=document.getElementById('ld_body');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td></td>
+    <td><input type="number" class="ld-len" value="${len}" style="width:100%"></td>
+    <td><select class="ld-dir" style="width:100%">
+      <option value="R" ${dir==='R'?'selected':''}>右转</option>
+      <option value="L" ${dir==='L'?'selected':''}>左转</option>
+    </select></td>
+    <td><input type="number" class="ld-ang" value="${ang}" style="width:100%"></td>
+    <td><button class="del-btn" onclick="delLandRow(this)">删</button></td>`;
+  tb.appendChild(tr);
+  renumber('ld_body');
+}
+function delLandRow(btn){ btn.closest('tr').remove(); renumber('ld_body'); }
+function clearLandRows(){ document.getElementById('ld_body').innerHTML=''; }
+function renumber(tbodyId){
+  const rows=document.getElementById(tbodyId).querySelectorAll('tr');
+  rows.forEach((tr,i)=>tr.cells[0].textContent=i+1);
+}
+function calcLand(){
+  const tb=document.getElementById('ld_body');
+  const rows=[...tb.querySelectorAll('tr')];
+  if(rows.length<3){ landResult.innerHTML='<span class="warn">至少需要 3 条边</span>'; return; }
+  let start=parseFloat(document.getElementById('ld_start').value)||0;
+  let az=start*Math.PI/180, x=0, y=0;
+  const pts=[[0,0]]; const edges=[]; let perimeter=0;
+  rows.forEach(tr=>{
+    const len=parseFloat(tr.querySelector('.ld-len')?.value)||0;
+    const dir=tr.querySelector('.ld-dir')?.value||'R';
+    const ang=parseFloat(tr.querySelector('.ld-ang')?.value)||0;
+    if(len<=0) return;
+    x+=len*Math.cos(az); y+=len*Math.sin(az);
+    pts.push([x,y]); edges.push({len,dir,ang}); perimeter+=len;
+    const delta=ang*Math.PI/180;
+    az += (dir==='R'? delta : -delta);
+  });
+  if(edges.length<3){ landResult.innerHTML='<span class="warn">有效边数不足 3 条</span>'; return; }
+  const closeDist=Math.sqrt(x*x+y*y);
+  const relClose=perimeter>0?(closeDist/perimeter):0;
+  let area=0;
+  for(let i=0;i<pts.length-1;i++){ area+=pts[i][0]*pts[i+1][1]-pts[i+1][0]*pts[i][1]; }
+  area=Math.abs(area)/2;
+  const m2=area/10000, mu=m2/666.6667;
+  let html=`<div class="sec-title">计算结果</div>
+    边数：<b>${edges.length}</b><br>
+    周长：<b>${fmt(perimeter)} cm</b><br>
+    闭合差距离：<b>${fmt(closeDist,4)} cm</b>（相对闭合差 1/${closeDist>0?fmt(perimeter/closeDist,0):'∞'}）<br>
+    面积：<b class="big">${fmt(area)} cm²</b><br>
+    合：<b>${fmt(m2,4)} m²</b> ｜ <b>${fmt(mu,6)} 亩</b>`;
+  if(relClose>0.001) html+='<div class="warn">⚠ 闭合差偏大（>1/1000），请检查边长、方向与角度</div>';
+  else html+='<div class="ok">✔ 闭合精度良好</div>';
+  landResult.innerHTML=html;
+  results.land={title:'土地面积', rows:[
+    ['边数',edges.length],['周长(cm)',fmt(perimeter)],
+    ['闭合差(cm)',fmt(closeDist,4)],
+    ['面积(cm²)',fmt(area)],['面积(m²)',fmt(m2,4)],['面积(亩)',fmt(mu,6)]
+  ]};
+  drawLand(pts);
+}
+function drawLand(pts){
+  const cv=landCanvas, ctx=cv.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.clientWidth*dpr; cv.height=260*dpr; ctx.scale(dpr,dpr);
+  const W=cv.clientWidth, Hh=260;
+  ctx.clearRect(0,0,W,Hh);
+  if(pts.length<2) return;
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  pts.forEach(p=>{minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1]);});
+  const pad=40;
+  const dx=maxX-minX||1, dy=maxY-minY||1;
+  const s=Math.min((W-pad*2)/dx,(Hh-pad*2)/dy);
+  const ox=pad-minX*s, oy=Hh-pad+minY*s;
+  const toXY=p=>[ox+p[0]*s, oy-p[1]*s];
+
+  ctx.strokeStyle='#2d8cf0'; ctx.lineWidth=2;
+  ctx.beginPath();
+  pts.forEach((p,i)=>{ const [px,py]=toXY(p); i?ctx.lineTo(px,py):ctx.moveTo(px,py); });
+  ctx.closePath();
+  ctx.fillStyle='rgba(45,140,240,.10)'; ctx.fill(); ctx.stroke();
+
+  const cx0=pts.reduce((s,p)=>s+p[0],0)/pts.length;
+  const cy0=pts.reduce((s,p)=>s+p[1],0)/pts.length;
+  const [ccx,ccy]=toXY([cx0,cy0]);
+
+  for(let i=0;i<pts.length-1;i++){
+    const a=pts[i], b=pts[i+1];
+    const [ax,ay]=toXY(a), [bx,by]=toXY(b);
+    const len=Math.hypot(b[0]-a[0], b[1]-a[1]);
+    const mx=(ax+bx)/2, my=(ay+by)/2;
+    let nx=mx-ccx, ny=my-ccy;
+    const nl=Math.hypot(nx,ny)||1; nx/=nl; ny/=nl;
+    drawTag(ctx, mx+nx*14, my+ny*14, fmt(len,1)+'cm', '#1b6dad','center');
+  }
+  pts.forEach((p,i)=>{
+    if(i===pts.length-1 && Math.hypot(p[0]-pts[0][0], p[1]-pts[0][1])<1e-6) return;
+    const [px,py]=toXY(p);
+    ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2);
+    ctx.fillStyle='#ff4d4f'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+    let nx=px-ccx, ny=py-ccy;
+    const nl=Math.hypot(nx,ny)||1; nx/=nl; ny/=nl;
+    drawTag(ctx, px+nx*18, py+ny*18, 'P'+(i+1), '#ff4d4f','center');
+  });
+  ctx.fillStyle='#888'; ctx.font='11px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('多边形示意（P=角点，边中标注边长）', 8, 6);
+}
+
+/* ========== 1 直梯 ========== */
+function addStairRow(h='', rise='17.5', run='26'){
+  const tb=document.getElementById('st_body');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td></td>
+    <td><input type="number" value="${h}" style="width:100%"></td>
+    <td><input type="number" value="${rise}" style="width:100%"></td>
+    <td><input type="number" value="${run}" style="width:100%"></td>
+    <td><button class="del-btn" onclick="delStairRow(this)">删</button></td>`;
+  tb.appendChild(tr);
+  renumber('st_body');
+}
+function delStairRow(btn){ btn.closest('tr').remove(); renumber('st_body'); }
+function clearStairRows(){ document.getElementById('st_body').innerHTML=''; }
+
+function calcStair(){
+  const tb=document.getElementById('st_body');
+  const rows=[...tb.querySelectorAll('tr')];
+  if(rows.length===0){ stairResult.innerHTML='<span class="warn">请至少添加一段</span>'; return; }
+  let totalH=0, totalL=0, totalSteps=0, rowsOut=[];
+  let html=`<div class="sec-title">分段计算结果</div>
+    <table><thead><tr><th>段</th><th>段高</th><th>踏步数</th><th>实际踏步高</th><th>段水平长</th><th>坡度</th></tr></thead><tbody>`;
+  rows.forEach((tr,i)=>{
+    const inputs=tr.querySelectorAll('input');
+    const H=parseFloat(inputs[0]?.value)||0;
+    const h=parseFloat(inputs[1]?.value)||0;
+    const b=parseFloat(inputs[2]?.value)||0;
+    if(H<=0||h<=0||b<=0) return;
+    const steps=Math.round(H/h);
+    const hReal=H/steps;
+    const L=(steps-1)*b;
+    const slope=Math.atan(hReal/b)*180/Math.PI;
+    totalH+=H; totalL+=L; totalSteps+=steps;
+    html+=`<tr><td>${i+1}</td><td>${fmt(H)}</td><td>${steps}</td><td>${fmt(hReal)}</td><td>${fmt(L)}</td><td>${fmt(slope)}°</td></tr>`;
+    rowsOut.push([`第${i+1}段段高(cm)`,fmt(H)]);
+    rowsOut.push([`第${i+1}段踏步数`,steps]);
+    rowsOut.push([`第${i+1}段实际踏步高(cm)`,fmt(hReal)]);
+    rowsOut.push([`第${i+1}段水平长(cm)`,fmt(L)]);
+    rowsOut.push([`第${i+1}段坡度(°)`,fmt(slope)]);
+  });
+  html+=`</tbody></table><div class="sec-title">汇总</div>
+    总高度：<b class="big">${fmt(totalH)} cm</b><br>
+    总踏步数：<b>${totalSteps} 级</b><br>
+    总水平长：<b>${fmt(totalL)} cm</b>`;
+  stairResult.innerHTML=html;
+  rowsOut.push(['总高度(cm)',fmt(totalH)]);
+  rowsOut.push(['总踏步数',totalSteps]);
+  rowsOut.push(['总水平长(cm)',fmt(totalL)]);
+  results.stair={title:'直梯(分段)', rows:rowsOut};
+  drawStairSegments(rows);
+}
+function drawStairSegments(rows){
+  const cv=stairCanvas, ctx=cv.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.clientWidth*dpr; cv.height=300*dpr; ctx.scale(dpr,dpr);
+  const W=cv.clientWidth, Hh=300;
+  ctx.clearRect(0,0,W,Hh);
+  const padL=50, padR=70, padT=40, padB=40;
+  if(rows.length===0) return;
+  let totalH=0, totalL=0;
+  const segs=[];
+  rows.forEach((tr,idx)=>{
+    const inputs=tr.querySelectorAll('input');
+    const H=parseFloat(inputs[0]?.value)||0;
+    const h=parseFloat(inputs[1]?.value)||0;
+    const b=parseFloat(inputs[2]?.value)||0;
+    if(H<=0||h<=0||b<=0) return;
+    const steps=Math.round(H/h);
+    const hReal=H/steps;
+    const L=(steps-1)*b;
+    segs.push({idx:idx+1, steps, hReal, b, L, H});
+    totalH+=H; totalL+=L;
+  });
+  if(segs.length===0||totalH===0||totalL===0) return;
+  const availW=W-padL-padR, availH=Hh-padT-padB;
+  const s=Math.min(availW/totalL, availH/totalH);
+  ctx.strokeStyle='#ddd'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL, Hh-padB); ctx.lineTo(W-padR, Hh-padB); ctx.stroke();
+  let x=padL, y=Hh-padB;
+  segs.forEach((seg, si)=>{
+    const startX=x, startY=y;
+    ctx.strokeStyle='#2d8cf0'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(x,y);
+    for(let i=0;i<seg.steps;i++){
+      x+=seg.b*s; ctx.lineTo(x,y);
+      y-=seg.hReal*s; ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.fillStyle='rgba(45,140,240,.08)';
+    ctx.beginPath();
+    ctx.moveTo(startX,startY); ctx.lineTo(startX,y);
+    ctx.lineTo(x,y); ctx.lineTo(x,startY);
+    ctx.closePath(); ctx.fill();
+    if(si>0){
+      ctx.strokeStyle='#ff9500'; ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(startX,startY); ctx.lineTo(startX,y); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    const midY=(startY+y)/2, midX=(startX+x)/2;
+    drawTag(ctx, startX-4, midY, fmt(seg.H,1)+'cm', '#1b6dad', 'right');
+    drawTag(ctx, midX, startY+14, fmt(seg.L,1)+'cm', '#1b6dad', 'center');
+    drawTag(ctx, midX, y-16, `第${seg.idx}段 · ${seg.steps}级`, '#ff4d4f', 'center');
+    ctx.font='10px "Microsoft YaHei",sans-serif';
+    ctx.fillStyle='#999'; ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText(fmt(totalH-(startY-y)/s,1)+'→'+fmt(totalH-(startY-y)/s+seg.H,1), W-padR+4, midY);
+  });
+  ctx.fillStyle='#888'; ctx.font='11px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('分段楼梯示意（段高 / 踏步数 / 水平长）', 8, 6);
+}
+
+/* ========== 2 圆柱梯 ========== */
+function calcCylinder(){
+  const H=+c_h.value, ang=+c_angle.value, ri=+c_ri.value, ro=+c_ro.value, h=+c_rise.value;
+  const start=+document.getElementById('c_start').value||0;
+  if(H<=0||ang<=0||ro<=ri||h<=0){ cylResult.innerHTML='<span class="warn">请输入有效参数（外半径需大于内半径）</span>'; return; }
+  const n=Math.round(H/h);
+  const hReal=H/n;
+  const stepAng=ang/n;
+  const midR=(ri+ro)/2;
+  const walkLen=Math.PI*2*midR*(ang/360);
+  const treadOut=Math.PI*2*ro*(stepAng/360);
+  const treadIn=Math.PI*2*ri*(stepAng/360);
+  const endAng=start+ang;
+  const html=`<div class="sec-title">计算结果</div>
+    踏步数：<b class="big">${n} 级</b><br>
+    实际踏步高：<b>${fmt(hReal)} cm</b><br>
+    起始角：<b>${fmt(start)}°</b> ｜ 结束角：<b>${fmt(endAng)}°</b><br>
+    每级旋转角：<b>${fmt(stepAng)}°</b><br>
+    行走中线总长：<b>${fmt(walkLen)} cm</b><br>
+    外缘踏步宽：<b>${fmt(treadOut)} cm</b><br>
+    内缘踏步宽：<b>${fmt(treadIn)} cm</b><br>
+    中线半径：<b>${fmt(midR)} cm</b>`;
+  cylResult.innerHTML=html;
+  results.cyl={title:'圆柱梯', rows:[
+    ['层高(cm)',fmt(H)],['旋转角(°)',fmt(ang)],['起始角(°)',fmt(start)],
+    ['结束角(°)',fmt(endAng)],['内半径(cm)',fmt(ri)],['外半径(cm)',fmt(ro)],
+    ['踏步数',n],['实际踏步高(cm)',fmt(hReal)],['每级旋转角(°)',fmt(stepAng)],
+    ['行走中线总长(cm)',fmt(walkLen)],['外缘踏步宽(cm)',fmt(treadOut)],['内缘踏步宽(cm)',fmt(treadIn)]
+  ]};
+  drawCyl(ri,ro,n,start,ang);
+}
+function drawCyl(ri,ro,n,start,ang){
+  const cv=cylCanvas, ctx=cv.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.clientWidth*dpr; cv.height=320*dpr; ctx.scale(dpr,dpr);
+  const W=cv.clientWidth, Hh=320;
+  ctx.clearRect(0,0,W,Hh);
+  const cx=W/2, cy=Hh/2+10;
+  const scale=(Math.min(W,Hh)/2-60)/(ro||1);
+  const startRad=start*Math.PI/180;
+
+  ctx.strokeStyle='#2d8cf0'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(cx,cy,ro*scale,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle='#19be6b'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(cx,cy,ri*scale,0,Math.PI*2); ctx.stroke();
+
+  const midR=(ri+ro)/2;
+  ctx.strokeStyle='#ff9500'; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.arc(cx,cy,midR*scale,0,Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+
+  const stepRad=(ang*Math.PI/180)/n;
+  ctx.strokeStyle='#bbb'; ctx.lineWidth=1;
+  for(let i=0;i<n;i++){
+    const a=startRad + i*stepRad;
+    ctx.beginPath();
+    ctx.moveTo(cx+ri*scale*Math.cos(a), cy+ri*scale*Math.sin(a));
+    ctx.lineTo(cx+ro*scale*Math.cos(a), cy+ro*scale*Math.sin(a));
+    ctx.stroke();
+  }
+  ctx.beginPath(); ctx.arc(cx,cy,Math.max(ri*scale,4),0,Math.PI*2);
+  ctx.fillStyle='rgba(25,190,107,.15)'; ctx.fill();
+
+  const a1=startRad+Math.PI*0.25;
+  drawArrowLine(ctx, cx, cy, cx+ri*scale*Math.cos(a1), cy+ri*scale*Math.sin(a1), '#19be6b');
+  drawTag(ctx, (cx+cx+ri*scale*Math.cos(a1))/2, (cy+cy+ri*scale*Math.sin(a1))/2-10,
+    '内半径 r='+fmt(ri,1), '#19be6b','center');
+  const a2=startRad-Math.PI*0.25;
+  drawArrowLine(ctx, cx, cy, cx+ro*scale*Math.cos(a2), cy+ro*scale*Math.sin(a2), '#2d8cf0');
+  drawTag(ctx, (cx+cx+ro*scale*Math.cos(a2))/2, (cy+cy+ro*scale*Math.sin(a2))/2+12,
+    '外半径 R='+fmt(ro,1), '#2d8cf0','center');
+
+  ctx.strokeStyle='#19be6b'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(cx,cy);
+  ctx.lineTo(cx+ro*scale*Math.cos(startRad), cy+ro*scale*Math.sin(startRad)); ctx.stroke();
+  const endRad=startRad + ang*Math.PI/180;
+  ctx.strokeStyle='#ff4d4f'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(cx,cy);
+  ctx.lineTo(cx+ro*scale*Math.cos(endRad), cy+ro*scale*Math.sin(endRad)); ctx.stroke();
+
+  drawTag(ctx, cx+ro*scale*0.85*Math.cos(startRad), cy+ro*scale*0.85*Math.sin(startRad)-14,
+    '起始 '+fmt(start,1)+'°', '#19be6b','center');
+  drawTag(ctx, cx+ro*scale*0.85*Math.cos(endRad), cy+ro*scale*0.85*Math.sin(endRad)-14,
+    '结束 '+fmt(start+ang,1)+'°', '#ff4d4f','center');
+
+  ctx.font='12px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.strokeStyle='#2d8cf0'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(10,30); ctx.lineTo(24,30); ctx.stroke();
+  ctx.fillStyle='#333'; ctx.fillText('外圆', 30, 30);
+  ctx.strokeStyle='#19be6b';
+  ctx.beginPath(); ctx.moveTo(80,30); ctx.lineTo(94,30); ctx.stroke();
+  ctx.fillStyle='#333'; ctx.fillText('内圆 / 起始边', 100, 30);
+  ctx.strokeStyle='#ff4d4f';
+  ctx.beginPath(); ctx.moveTo(210,30); ctx.lineTo(224,30); ctx.stroke();
+  ctx.fillStyle='#333'; ctx.fillText('结束边', 230, 30);
+  ctx.strokeStyle='#ff9500'; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(10,50); ctx.lineTo(24,50); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#333'; ctx.fillText('行走中线', 30, 50);
+  ctx.strokeStyle='#bbb';
+  ctx.beginPath(); ctx.moveTo(120,50); ctx.lineTo(134,50); ctx.stroke();
+  ctx.fillStyle='#333'; ctx.fillText('踏步辐射线', 140, 50);
+  ctx.fillStyle='#888'; ctx.font='11px "Microsoft YaHei",sans-serif';
+  ctx.fillText('俯视图：0°向右，逆时针为正；绿=起始边，红=结束边', 10, 72);
+}
+
+/* ========== 3 转弯梯 ========== */
+function calcTurn(){
+  const H=+t_h.value, h=+t_rise.value, b=+t_run.value, Wp=+t_land.value;
+  if(H<=0||h<=0||b<=0){ turnResult.innerHTML='<span class="warn">请输入有效参数</span>'; return; }
+  const n=Math.round(H/h);
+  const hReal=H/n;
+  const nStraight=n-2;
+  const n1=Math.ceil(nStraight/2);
+  const n2=nStraight-n1;
+  const L1=n1*b, L2=n2*b;
+  const html=`<div class="sec-title">计算结果</div>
+    总踏步数：<b class="big">${n} 级</b><br>
+    实际踏步高：<b>${fmt(hReal)} cm</b><br>
+    平台占高：<b>2 级</b><br>
+    第一直段：<b>${n1} 级</b>，水平长 <b>${fmt(L1)} cm</b><br>
+    平台宽：<b>${fmt(Wp)} cm</b><br>
+    第二直段：<b>${n2} 级</b>，水平长 <b>${fmt(L2)} cm</b><br>
+    总水平投影：<b>${fmt(L1+Wp)} × ${fmt(L2+Wp)} cm</b>`;
+  turnResult.innerHTML=html;
+  results.turn={title:'转弯梯', rows:[
+    ['层高(cm)',fmt(H)],['总踏步数',n],['实际踏步高(cm)',fmt(hReal)],
+    ['第一直段级数',n1],['第一直段长(cm)',fmt(L1)],
+    ['平台宽(cm)',fmt(Wp)],['第二直段级数',n2],['第二直段长(cm)',fmt(L2)]
+  ]};
+  drawTurn(L1,L2,Wp);
+}
+function drawTurn(L1,L2,Wp){
+  const cv=turnCanvas, ctx=cv.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.clientWidth*dpr; cv.height=320*dpr; ctx.scale(dpr,dpr);
+  const W=cv.clientWidth, Hh=320;
+  ctx.clearRect(0,0,W,Hh);
+  const padL=60, padR=60, padT=70, padB=60;
+  const availW=W-padL-padR, availH=Hh-padT-padB;
+  const totalW=Wp+L2, totalH=L1+Wp;
+  const s=Math.min(availW/totalW, availH/totalH);
+  const baseX=padL+(availW-totalW*s)/2;
+  const baseY=padT+(availH-totalH*s)/2;
+
+  const x1=baseX, y1=baseY, w1=Wp*s, h1=L1*s;
+  ctx.fillStyle='rgba(45,140,240,.18)'; ctx.fillRect(x1,y1,w1,h1);
+  ctx.strokeStyle='#2d8cf0'; ctx.lineWidth=2; ctx.strokeRect(x1,y1,w1,h1);
+  const x2=x1+w1, y2=baseY, w2=L2*s, h2=Wp*s;
+  ctx.fillStyle='rgba(25,190,107,.20)'; ctx.fillRect(x2,y2,w2,h2);
+  ctx.strokeStyle='#19be6b'; ctx.strokeRect(x2,y2,w2,h2);
+  const x3=x2, y3=y2+h2, w3=Wp*s, h3=L2*s;
+  ctx.fillStyle='rgba(45,140,240,.18)'; ctx.fillRect(x3,y3,w3,h3);
+  ctx.strokeStyle='#2d8cf0'; ctx.strokeRect(x3,y3,w3,h3);
+
+  drawArrowLine(ctx, x1+w1/2, y1+h1-10, x1+w1/2, y1+10, '#1b6dad');
+  drawArrowLine(ctx, x2+w2-10, y2+h2/2, x2+10, y2+h2/2, '#19be6b');
+  drawArrowLine(ctx, x3+w3/2, y3+10, x3+w3/2, y3+h3-10, '#1b6dad');
+
+  drawTag(ctx, x1+w1/2, y1+h1/2, '第一直段', '#2d8cf0','center');
+  drawTag(ctx, x2+w2/2, y2+h2/2, '转弯平台', '#19be6b','center');
+  drawTag(ctx, x3+w3/2, y3+h3/2, '第二直段', '#2d8cf0','center');
+
+  drawArrowLine(ctx, x1, y1-14, x1+w1, y1-14, '#1b6dad');
+  drawTag(ctx, x1+w1/2, y1-24, '段宽 Wp='+fmt(Wp,1), '#1b6dad','center');
+  drawArrowLine(ctx, x1-14, y1, x1-14, y1+h1, '#1b6dad');
+  drawTag(ctx, x1-22, y1+h1/2, 'L1='+fmt(L1,1), '#1b6dad','right');
+  drawArrowLine(ctx, x2, y2-14, x2+w2, y2-14, '#19be6b');
+  drawTag(ctx, x2+w2/2, y2-24, '平台长 L2='+fmt(L2,1), '#19be6b','center');
+  drawArrowLine(ctx, x3+w3+14, y3, x3+w3+14, y3+h3, '#1b6dad');
+  drawTag(ctx, x3+w3+22, y3+h3/2, 'L2='+fmt(L2,1), '#1b6dad','left');
+
+  ctx.font='12px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(45,140,240,.18)'; ctx.fillRect(10, 30, 14, 14);
+  ctx.strokeStyle='#2d8cf0'; ctx.strokeRect(10,30,14,14);
+  ctx.fillStyle='#333'; ctx.fillText('直段（踏步区）', 30, 37);
+  ctx.fillStyle='rgba(25,190,107,.20)'; ctx.fillRect(150, 30, 14, 14);
+  ctx.strokeStyle='#19be6b'; ctx.strokeRect(150,30,14,14);
+  ctx.fillStyle='#333'; ctx.fillText('转弯平台（不设踏步）', 170, 37);
+  ctx.fillStyle='#888'; ctx.font='11px "Microsoft YaHei",sans-serif';
+  ctx.fillText('箭头方向 = 上楼方向', 10, 56);
+}
+
+/* ========== 4 扶手栏杆 ========== */
+function calcRail(){
+  const L1=+r_l1.value, L2=+r_l2.value, H2=+r_h2.value, s=+r_s.value;
+  if(L1<0||L2<0||H2<0||s<=0){ railResult.innerHTML='<span class="warn">请输入有效参数</span>'; return; }
+  const slopeLen=Math.sqrt(L2*L2+H2*H2);
+  const total=Math.round((L1+slopeLen)*100)/100;
+  const posts=Math.floor(L1/s)+Math.floor(L2/s)+2;
+  const slope=Math.atan(H2/L2)*180/Math.PI;
+  const html=`<div class="sec-title">计算结果</div>
+    水平段长：<b>${fmt(L1)} cm</b><br>
+    斜段水平投影：<b>${fmt(L2)} cm</b><br>
+    斜段高度：<b>${fmt(H2)} cm</b><br>
+    斜段实长：<b class="big">${fmt(slopeLen)} cm</b><br>
+    扶手总长：<b>${fmt(total)} cm</b><br>
+    坡度：<b>${fmt(slope)}°</b><br>
+    立柱数量（估算）：<b>${posts} 根</b>`;
+  railResult.innerHTML=html;
+  results.rail={title:'扶手栏杆', rows:[
+    ['水平段长(cm)',fmt(L1)],['斜段水平投影(cm)',fmt(L2)],['斜段高度(cm)',fmt(H2)],
+    ['斜段实长(cm)',fmt(slopeLen)],['扶手总长(cm)',fmt(total)],
+    ['坡度(°)',fmt(slope)],['立柱数量',posts]
+  ]};
+  drawRail(L1,L2,H2,s);
+}
+function drawRail(L1,L2,H2,s){
+  const cv=railCanvas, ctx=cv.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.clientWidth*dpr; cv.height=260*dpr; ctx.scale(dpr,dpr);
+  const W=cv.clientWidth, Hh=260;
+  ctx.clearRect(0,0,W,Hh);
+  const padL=50, padR=60, padT=60, padB=60;
+  const availW=W-padL-padR, availH=Hh-padT-padB;
+  const totalW=L1+L2, totalH=Math.max(H2,1);
+  const sc=Math.min(availW/totalW, availH/totalH);
+  const baseY=Hh-padB, startX=padL;
+
+  const hx1=startX, hx2=startX+L1*sc;
+  const sx2=hx2+L2*sc, sy2=baseY-H2*sc;
+
+  ctx.strokeStyle='#ddd'; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(startX-10,baseY); ctx.lineTo(W-padR+10,baseY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle='#2d8cf0'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(hx1,baseY); ctx.lineTo(hx2,baseY); ctx.lineTo(sx2,sy2); ctx.stroke();
+
+  ctx.strokeStyle='#19be6b'; ctx.lineWidth=2;
+  const n1=Math.max(2, Math.floor(L1/s)+1);
+  for(let i=0;i<=n1;i++){ const px=hx1+(hx2-hx1)*(i/n1); ctx.beginPath(); ctx.moveTo(px,baseY); ctx.lineTo(px,baseY-40); ctx.stroke(); }
+  const n2=Math.max(2, Math.floor(L2/s)+1);
+  for(let i=0;i<=n2;i++){
+    const t=i/n2, px=hx2+(sx2-hx2)*t, py=baseY+(sy2-baseY)*t;
+    ctx.beginPath(); ctx.moveTo(px,baseY); ctx.lineTo(px,py); ctx.stroke();
+  }
+
+  drawArrowLine(ctx, hx1, baseY+16, hx2, baseY+16, '#1b6dad');
+  drawTag(ctx, (hx1+hx2)/2, baseY+26, 'L1='+fmt(L1,1), '#1b6dad','center');
+  drawArrowLine(ctx, hx2, baseY+16, sx2, baseY+16, '#1b6dad');
+  drawTag(ctx, (hx2+sx2)/2, baseY+26, 'L2='+fmt(L2,1), '#1b6dad','center');
+  drawArrowLine(ctx, sx2+18, baseY, sx2+18, sy2, '#ff9500');
+  drawTag(ctx, sx2+28, (baseY+sy2)/2, 'H2='+fmt(H2,1), '#ff9500','left');
+  drawTag(ctx, (hx2+sx2)/2, (baseY+sy2)/2-16, '斜长='+fmt(Math.hypot(L2,H2),1), '#19be6b','center');
+  drawTag(ctx, (hx1+hx2)/2, baseY-52, '立柱间距 '+fmt(s,1), '#19be6b','center');
+
+  ctx.fillStyle='#888'; ctx.font='11px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('扶手栏杆立面示意（L1 / L2 / H2 / 立柱）', 8, 6);
+}
+
+/* ========== 5 门窗框 ========== */
+function calcDoor(){
+  const W=+d_w.value, H=+d_h.value, f=+d_f.value, g=+d_g.value;
+  if(W<=0||H<=0||f<=0||g<0){ doorResult.innerHTML='<span class="warn">请输入有效参数</span>'; return; }
+  const innerW=W-2*g, innerH=H-2*g;
+  const frameOutW=innerW+2*f, frameOutH=innerH+2*f;
+  const perimeter=2*(innerW+innerH);
+  const material=2*(innerW+innerH)+4*f*2;
+  const area=innerW*innerH/10000;
+  const html=`<div class="sec-title">计算结果</div>
+    洞口尺寸：<b>${fmt(W)} × ${fmt(H)} cm</b><br>
+    安装缝：<b>${fmt(g)} cm</b><br>
+    框内净尺寸：<b>${fmt(innerW)} × ${fmt(innerH)} cm</b><br>
+    框外尺寸：<b>${fmt(frameOutW)} × ${fmt(frameOutH)} cm</b><br>
+    框内周长：<b>${fmt(perimeter)} cm</b><br>
+    框料总长（估算）：<b>${fmt(material)} cm</b><br>
+    玻璃/扇面积：<b>${fmt(area,4)} m²</b>`;
+  doorResult.innerHTML=html;
+  results.door={title:'门窗框', rows:[
+    ['洞口宽(cm)',fmt(W)],['洞口高(cm)',fmt(H)],['框料宽(cm)',fmt(f)],['安装缝(cm)',fmt(g)],
+    ['框内净宽(cm)',fmt(innerW)],['框内净高(cm)',fmt(innerH)],
+    ['框外宽(cm)',fmt(frameOutW)],['框外高(cm)',fmt(frameOutH)],
+    ['框内周长(cm)',fmt(perimeter)],['框料总长(cm)',fmt(material)],['面积(m²)',fmt(area,4)]
+  ]};
+  drawDoor(W,H,f,g,innerW,innerH,frameOutW,frameOutH);
+}
+function drawDoor(W,H,f,g,innerW,innerH,frameOutW,frameOutH){
+  const cv=doorCanvas, ctx=cv.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.clientWidth*dpr; cv.height=260*dpr; ctx.scale(dpr,dpr);
+  const Wc=cv.clientWidth, Hc=260;
+  ctx.clearRect(0,0,Wc,Hc);
+  const padL=60, padR=60, padT=50, padB=50;
+  const availW=Wc-padL-padR, availH=Hc-padT-padB;
+  const sc=Math.min(availW/W, availH/H);
+  const totalW=W*sc, totalH=H*sc;
+  const x0=padL+(availW-totalW)/2;
+  const y0=padT+(availH-totalH)/2;
+  ctx.strokeStyle='#bbb'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+  ctx.strokeRect(x0,y0,totalW,totalH);
+  ctx.setLineDash([]);
+  const fx=x0+g*sc, fy=y0+g*sc, fw=innerW*sc, fh=innerH*sc;
+  ctx.fillStyle='rgba(45,140,240,.12)'; ctx.fillRect(fx,fy,fw,fh);
+  ctx.strokeStyle='#2d8cf0'; ctx.lineWidth=2; ctx.strokeRect(fx,fy,fw,fh);
+  ctx.fillStyle='rgba(255,255,255,.6)';
+  ctx.fillRect(fx+f*sc, fy+f*sc, fw-2*f*sc, fh-2*f*sc);
+  ctx.strokeStyle='#9cc9f5'; ctx.lineWidth=1;
+  ctx.strokeRect(fx+f*sc, fy+f*sc, fw-2*f*sc, fh-2*f*sc);
+  drawArrowLine(ctx, x0, y0-14, x0+totalW, y0-14, '#888');
+  drawTag(ctx, x0+totalW/2, y0-24, '洞口 W='+fmt(W,1), '#888','center');
+  drawArrowLine(ctx, x0-14, y0, x0-14, y0+totalH, '#888');
+  drawTag(ctx, x0-24, y0+totalH/2, '洞口 H='+fmt(H,1), '#888','right');
+  drawArrowLine(ctx, fx, fy+fh+14, fx+fw, fy+fh+14, '#1b6dad');
+  drawTag(ctx, fx+fw/2, fy+fh+24, '框内净宽='+fmt(innerW,1), '#1b6dad','center');
+  drawArrowLine(ctx, fx+fw+14, fy, fx+fw+14, fy+fh, '#1b6dad');
+  drawTag(ctx, fx+fw+24, fy+fh/2, '框内净高='+fmt(innerH,1), '#1b6dad','left');
+  drawTag(ctx, fx+fw/2, fy-14, '框料 f='+fmt(f,1), '#ff9500','center');
+  drawTag(ctx, fx+fw/2, fy+fh/2, '缝 g='+fmt(g,1), '#19be6b','center');
+  ctx.fillStyle='#888'; ctx.font='11px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('门窗框平面示意（洞口 / 框内净尺寸 / 框料 / 安装缝）', 8, 6);
+}
+
+/* ========== 6 木工下料（多件明细） ========== */
+function addWoodRow(name='', L='', W='', T='', n=1, mat='', price=''){
+  const tb=document.getElementById('wd_body');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td></td>
+    <td><input type="text" class="wd-name" value="${name}" style="width:100%" placeholder="如：侧板"></td>
+    <td><input type="number" class="wd-l" value="${L}" style="width:90px"></td>
+    <td><input type="number" class="wd-w" value="${W}" style="width:90px"></td>
+    <td><input type="number" class="wd-t" value="${T}" style="width:90px"></td>
+    <td><input type="number" class="wd-n" value="${n}" style="width:70px"></td>
+    <td><input type="text" class="wd-mat" value="${mat}" style="width:100px" placeholder="如：松木"></td>
+    <td><input type="number" class="wd-price" value="${price}" style="width:110px" placeholder="元/m³"></td>
+    <td><button class="del-btn" onclick="delWoodRow(this)">删</button></td>`;
+  tb.appendChild(tr);
+  renumber('wd_body');
+}
+function delWoodRow(btn){ btn.closest('tr').remove(); renumber('wd_body'); }
+function clearWoodRows(){ document.getElementById('wd_body').innerHTML=''; }
+
+function calcWood(){
+  const tb=document.getElementById('wd_body');
+  const rows=[...tb.querySelectorAll('tr')];
+  if(rows.length===0){ woodResult.innerHTML='<span class="warn">请至少添加一件下料</span>'; return; }
+  const k=+document.getElementById('w_k').value||0;
+  const loss=+document.getElementById('w_loss').value||0;
+
+  let totalArea=0, totalCutLen=0, totalNetLen=0, totalQty=0, totalVol=0, totalAmt=0;
+  let detailRows=[];
+  let html=`<div class="sec-title">逐件结果</div><div style="overflow-x:auto">
+    <table style="min-width:760px"><thead><tr>
+      <th>件号</th><th>名称</th><th>尺寸(cm)</th><th>数量</th>
+      <th>单件面积</th><th>小计面积</th><th>小计体积</th>
+      <th>下料长</th><th>材质</th><th>小计金额</th>
+    </tr></thead><tbody>`;
+
+  rows.forEach((tr,i)=>{
+    const name=tr.querySelector('.wd-name')?.value||('件'+(i+1));
+    const L=parseFloat(tr.querySelector('.wd-l')?.value)||0;
+    const W=parseFloat(tr.querySelector('.wd-w')?.value)||0;
+    const T=parseFloat(tr.querySelector('.wd-t')?.value)||0;
+    const n=parseInt(tr.querySelector('.wd-n')?.value)||0;
+    const mat=tr.querySelector('.wd-mat')?.value||'';
+    const price=parseFloat(tr.querySelector('.wd-price')?.value)||0;
+    if(L<=0||W<=0||n<=0) return;
+
+    const oneArea=L*W/10000;
+    const sumArea=oneArea*n;
+    const vol=(L*W*(T||0))/1000000;
+    const sumVol=vol*n;
+    const cutLen=(L+k)*n;
+    const amt=sumVol*price;
+
+    totalArea+=sumArea;
+    totalCutLen+=cutLen;
+    totalNetLen+=L*n;
+    totalQty+=n;
+    totalVol+=sumVol;
+    totalAmt+=amt;
+
+    html+=`<tr>
+      <td>${i+1}</td><td>${name}</td>
+      <td>${fmt(L)}×${fmt(W)}${T?('×'+fmt(T)):''}</td>
+      <td>${n}</td>
+      <td>${fmt(oneArea,4)}</td>
+      <td>${fmt(sumArea,4)}</td>
+      <td>${T?fmt(sumVol,4):'-'}</td>
+      <td>${fmt(cutLen)}</td>
+      <td>${mat||'-'}</td>
+      <td>${price?fmt(amt,2):'-'}</td>
+    </tr>`;
+
+    detailRows.push([`${i+1}.${name} 尺寸(cm)`,`${fmt(L)}×${fmt(W)}${T?('×'+fmt(T)):''}`]);
+    detailRows.push([`${i+1}.${name} 数量`,n]);
+    detailRows.push([`${i+1}.${name} 小计面积(m²)`,fmt(sumArea,4)]);
+    if(T) detailRows.push([`${i+1}.${name} 小计体积(m³)`,fmt(sumVol,4)]);
+    detailRows.push([`${i+1}.${name} 下料长(cm)`,fmt(cutLen)]);
+    if(mat) detailRows.push([`${i+1}.${name} 材质`,mat]);
+    if(price) detailRows.push([`${i+1}.${name} 小计金额(元)`,fmt(amt,2)]);
+  });
+
+  if(totalQty===0){ woodResult.innerHTML='<span class="warn">请检查每件的长、宽、数量是否都大于 0</span>'; return; }
+  const withLoss=totalCutLen*(1+loss/100);
+
+  html+=`</tbody></table></div>
+    <div class="sec-title">汇总</div>
+    总件数：<b class="big">${totalQty} 件</b><br>
+    总净面积：<b>${fmt(totalArea,4)} m²</b><br>
+    ${totalVol?`总用材体积：<b>${fmt(totalVol,4)} m³</b><br>`:''}
+    下料净长：<b>${fmt(totalNetLen)} cm</b><br>
+    含锯缝总长：<b>${fmt(totalCutLen)} cm</b><br>
+    含损耗总长：<b class="big">${fmt(withLoss)} cm</b><br>
+    ${totalAmt?`材料总价：<b class="big">${fmt(totalAmt,2)} 元</b><br>`:''}
+    锯缝：<b>${fmt(k)} cm</b> ｜ 损耗率：<b>${fmt(loss)} %</b>`;
+  woodResult.innerHTML=html;
+
+  const rowsOut=[['总件数',totalQty],['总净面积(m²)',fmt(totalArea,4)]]
+    .concat(totalVol?[['总用材体积(m³)',fmt(totalVol,4)]]:[])
+    .concat([
+      ['下料净长(cm)',fmt(totalNetLen)],
+      ['含锯缝总长(cm)',fmt(totalCutLen)],
+      ['含损耗总长(cm)',fmt(withLoss)],
+      ['锯缝(cm)',fmt(k)],
+      ['损耗率(%)',fmt(loss)]
+    ])
+    .concat(totalAmt?[['材料总价(元)',fmt(totalAmt,2)]]:[])
+    .concat(detailRows);
+  results.wood={title:'木工下料', rows:rowsOut};
+
+  drawWoodMulti(totalQty, withLoss, totalVol, totalAmt);
+}
+function drawWoodMulti(totalQty, withLoss, totalVol, totalAmt){
+  const cv=woodCanvas, ctx=cv.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.clientWidth*dpr; cv.height=260*dpr; ctx.scale(dpr,dpr);
+  const Wc=cv.clientWidth, Hc=260;
+  ctx.clearRect(0,0,Wc,Hc);
+  const padL=60, padR=80, padT=50, padB=50;
+  const availW=Wc-padL-padR, availH=Hc-padT-padB;
+  const tb=document.getElementById('wd_body');
+  const rows=[...tb.querySelectorAll('tr')];
+  const items=[];
+  rows.forEach((tr,i)=>{
+    const name=tr.querySelector('.wd-name')?.value||('件'+(i+1));
+    const L=parseFloat(tr.querySelector('.wd-l')?.value)||0;
+    const W=parseFloat(tr.querySelector('.wd-w')?.value)||0;
+    const n=parseInt(tr.querySelector('.wd-n')?.value)||0;
+    if(L<=0||W<=0||n<=0) return;
+    items.push({name,L,W,n});
+  });
+  if(items.length===0) return;
+
+  const show=Math.min(items.length,6);
+  const gap=6;
+  const maxL=Math.max(...items.map(it=>it.L));
+  const maxW=Math.max(...items.map(it=>it.W));
+  const cellW=(availW-gap*(show-1))/show;
+  const cellH=availH;
+
+  for(let i=0;i<show;i++){
+    const it=items[i];
+    const pw=cellW*(it.L/maxL);
+    const ph=cellH*(it.W/maxW);
+    const px=padL+i*(cellW+gap)+(cellW-pw)/2;
+    const py=padT+(cellH-ph)/2;
+    ctx.fillStyle='rgba(45,140,240,.14)';
+    ctx.fillRect(px,py,pw,ph);
+    ctx.strokeStyle='#2d8cf0'; ctx.lineWidth=1.5;
+    ctx.strokeRect(px,py,pw,ph);
+    ctx.fillStyle='#1b6dad';
+    ctx.font='bold 12px "Microsoft YaHei",sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(it.name||('#'+(i+1)), px+pw/2, py+ph/2-8);
+    ctx.font='11px "Microsoft YaHei",sans-serif';
+    ctx.fillText(fmt(it.L,0)+'×'+fmt(it.W,0)+' ×'+it.n, px+pw/2, py+ph/2+10);
+  }
+  if(items.length>show){
+    ctx.fillStyle='#888'; ctx.font='12px "Microsoft YaHei",sans-serif';
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText('…共 '+items.length+' 种', padL+show*(cellW+gap), Hc/2);
+  }
+  ctx.fillStyle='#888'; ctx.font='11px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  let title='多件排料示意（件数='+totalQty+'，含损耗总长='+fmt(withLoss,1)+'cm';
+  if(totalVol) title+= '，体积='+fmt(totalVol,4)+'m³';
+  if(totalAmt) title+= '，金额='+fmt(totalAmt,2)+'元';
+  title+='）';
+  ctx.fillText(title, 8, 6);
+}
+
+/* ========== 一键计算 ========== */
+function calcAll(){
+  if(!confirm('将按当前输入计算全部 7 个模块，是否继续？')) return;
+  const tasks=[
+    ['土地面积', calcLand],['直梯', calcStair],['圆柱梯', calcCylinder],
+    ['转弯梯', calcTurn],['扶手栏杆', calcRail],['门窗框', calcDoor],['木工下料', calcWood]
+  ];
+  let ok=0, fail=[];
+  tasks.forEach(([name,fn])=>{
+    try{ fn(); ok++; }catch(e){ fail.push(name); }
+  });
+  if(fail.length===0) alert('已计算全部模块：'+ok+' 个');
+  else alert('完成 '+ok+' 个，以下模块计算失败：\n'+fail.join('、'));
+}
+
+/* ========== 导出 CSV ========== */
+function openExport(){
+  const list=document.getElementById('exportList');
+  list.innerHTML='';
+  MODULES.forEach(m=>{
+    const has=!!results[m.id];
+    const div=document.createElement('label');
+    div.className='exp-item';
+    div.innerHTML=`<input type="checkbox" value="${m.id}" ${has?'checked':''} ${has?'':'disabled'}>
+      <span>${m.name}</span><small>${has?'已计算':'无数据'}</small>`;
+    list.appendChild(div);
+  });
+  document.getElementById('exportModal').classList.add('show');
+}
+function closeExport(){ document.getElementById('exportModal').classList.remove('show'); }
+function doExport(){
+  const checked=[...document.querySelectorAll('#exportList input:checked')].map(i=>i.value);
+  if(!checked.length){ alert('请至少选择一个模块'); return; }
+  let csv='\uFEFF模块,项目,数值\n';
+  checked.forEach(id=>{
+    const r=results[id];
+    if(!r) return;
+    r.rows.forEach(row=>{ csv+=`${r.title},${row[0]},${row[1]}\n`; });
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='测量计算结果_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  closeExport();
+}
+
+/* ========== 保存 / 读取 ========== */
+function collectData(){
+  return {
+    version:1,
+    savedAt:new Date().toISOString(),
+    land:{
+      start:document.getElementById('ld_start').value,
+      rows:[...document.querySelectorAll('#ld_body tr')].map(tr=>({
+        len:tr.querySelector('.ld-len')?.value||'',
+        dir:tr.querySelector('.ld-dir')?.value||'R',
+        ang:tr.querySelector('.ld-ang')?.value||''
+      }))
+    },
+    stair:{
+      rows:[...document.querySelectorAll('#st_body tr')].map(tr=>{
+        const ins=tr.querySelectorAll('input');
+        return {h:ins[0]?.value||'', rise:ins[1]?.value||'', run:ins[2]?.value||''};
+      })
+    },
+    cyl:{
+      h:document.getElementById('c_h').value,
+      angle:document.getElementById('c_angle').value,
+      start:document.getElementById('c_start').value,
+      ri:document.getElementById('c_ri').value,
+      ro:document.getElementById('c_ro').value,
+      rise:document.getElementById('c_rise').value
+    },
+    turn:{
+      h:document.getElementById('t_h').value,
+      rise:document.getElementById('t_rise').value,
+      run:document.getElementById('t_run').value,
+      land:document.getElementById('t_land').value
+    },
+    rail:{
+      l1:document.getElementById('r_l1').value,
+      l2:document.getElementById('r_l2').value,
+      h2:document.getElementById('r_h2').value,
+      s:document.getElementById('r_s').value
+    },
+    door:{
+      w:document.getElementById('d_w').value,
+      h:document.getElementById('d_h').value,
+      f:document.getElementById('d_f').value,
+      g:document.getElementById('d_g').value
+    },
+    wood:{
+      rows:[...document.querySelectorAll('#wd_body tr')].map(tr=>({
+        name:tr.querySelector('.wd-name')?.value||'',
+        l:tr.querySelector('.wd-l')?.value||'',
+        w:tr.querySelector('.wd-w')?.value||'',
+        t:tr.querySelector('.wd-t')?.value||'',
+        n:tr.querySelector('.wd-n')?.value||'',
+        mat:tr.querySelector('.wd-mat')?.value||'',
+        price:tr.querySelector('.wd-price')?.value||''
+      })),
+      k:document.getElementById('w_k').value,
+      loss:document.getElementById('w_loss').value
+    }
+  };
+}
+function saveLocal(){
+  const data=collectData();
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='测量数据_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function loadLocal(){ document.getElementById('loadFile').click(); }
+function handleLoadFile(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{ applyData(JSON.parse(ev.target.result)); alert('读取成功'); }
+    catch(err){ alert('读取失败：文件格式不正确'); }
+    e.target.value='';
+  };
+  reader.readAsText(file);
+}
+function applyData(data){
+  if(data.land){
+    document.getElementById('ld_start').value=data.land.start??0;
+    clearLandRows();
+    (data.land.rows||[]).forEach(r=>addLandRow(r.len, r.dir||'R', r.ang));
+  }
+  if(data.stair){
+    clearStairRows();
+    (data.stair.rows||[]).forEach(r=>addStairRow(r.h, r.rise, r.run));
+  }
+  if(data.cyl){
+    document.getElementById('c_h').value=data.cyl.h??280;
+    document.getElementById('c_angle').value=data.cyl.angle??360;
+    document.getElementById('c_start').value=data.cyl.start??-90;
+    document.getElementById('c_ri').value=data.cyl.ri??40;
+    document.getElementById('c_ro').value=data.cyl.ro??110;
+    document.getElementById('c_rise').value=data.cyl.rise??17.5;
+  }
+  if(data.turn){
+    document.getElementById('t_h').value=data.turn.h??280;
+    document.getElementById('t_rise').value=data.turn.rise??17.5;
+    document.getElementById('t_run').value=data.turn.run??26;
+    document.getElementById('t_land').value=data.turn.land??90;
+  }
+  if(data.rail){
+    document.getElementById('r_l1').value=data.rail.l1??200;
+    document.getElementById('r_l2').value=data.rail.l2??300;
+    document.getElementById('r_h2').value=data.rail.h2??150;
+    document.getElementById('r_s').value=data.rail.s??100;
+  }
+  if(data.door){
+    document.getElementById('d_w').value=data.door.w??120;
+    document.getElementById('d_h').value=data.door.h??150;
+    document.getElementById('d_f').value=data.door.f??6;
+    document.getElementById('d_g').value=data.door.g??1;
+  }
+  if(data.wood){
+    clearWoodRows();
+    (data.wood.rows||[]).forEach(r=>addWoodRow(r.name, r.l, r.w, r.t, r.n, r.mat, r.price));
+    document.getElementById('w_k').value=data.wood.k??0.3;
+    document.getElementById('w_loss').value=data.wood.loss??5;
+  }
+}
+
+/* ========== 打印 ========== */
+function printPage(){ window.print(); }
+
+/* ========== 初始化 ========== */
+addLandRow(1000,'R',90);
+addLandRow(500,'R',90);
+addLandRow(1000,'R',90);
+addLandRow(500,'R',90);
+
+addStairRow(140,17.5,26);
+addStairRow(140,17.5,26);
+
+addWoodRow('侧板',200,60,1.8,2,'松木',1800);
+addWoodRow('底板',200,80,1.8,1,'松木',1800);
+addWoodRow('隔板',180,60,1.5,2,'多层板',2200);
+</script>
+</body>
+</html>
